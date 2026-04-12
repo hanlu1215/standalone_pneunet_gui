@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<Node name="root" dt="0.02" gravity="-9.81 0 0">
+    <Node name="Plugins">
+        <RequiredPlugin name="SoftRobotsPlugin" pluginName="SoftRobots"/>
+        <RequiredPlugin name="AnimationLoopPlugin" pluginName="Sofa.Component.AnimationLoop"/>
+        <RequiredPlugin name="ConstraintCorrectionPlugin" pluginName="Sofa.Component.Constraint.Lagrangian.Correction"/>
+        <RequiredPlugin name="ConstraintSolverPlugin" pluginName="Sofa.Component.Constraint.Lagrangian.Solver"/>
+        <RequiredPlugin name="IOMeshPlugin" pluginName="Sofa.Component.IO.Mesh"/>
+        <RequiredPlugin name="LinearSolverDirectPlugin" pluginName="Sofa.Component.LinearSolver.Direct"/>
+        <RequiredPlugin name="MappingLinearPlugin" pluginName="Sofa.Component.Mapping.Linear"/>
+        <RequiredPlugin name="MassPlugin" pluginName="Sofa.Component.Mass"/>
+        <RequiredPlugin name="ODESolverBackwardPlugin" pluginName="Sofa.Component.ODESolver.Backward"/>
+        <RequiredPlugin name="FEMElasticPlugin" pluginName="Sofa.Component.SolidMechanics.FEM.Elastic"/>
+        <RequiredPlugin name="SpringPlugin" pluginName="Sofa.Component.SolidMechanics.Spring"/>
+        <RequiredPlugin name="StateContainerPlugin" pluginName="Sofa.Component.StateContainer"/>
+        <RequiredPlugin name="TopologyContainerPlugin" pluginName="Sofa.Component.Topology.Container.Constant"/>
+        <RequiredPlugin name="VisualPlugin" pluginName="Sofa.Component.Visual"/>
+        <RequiredPlugin name="Rendering3DPlugin" pluginName="Sofa.GL.Component.Rendering3D"/>
+        <RequiredPlugin name="EngineSelectPlugin" pluginName="Sofa.Component.Engine.Select"/>
+    </Node>
+
+    <VisualStyle displayFlags="showVisualModels showBehaviorModels"/>
+    <InteractiveCamera name="camera" position="0.12 0.08 0.12" lookAt="-0.04 0.02 0.0"/>
+    <FreeMotionAnimationLoop/>
+    <BlockGaussSeidelConstraintSolver tolerance="1e-7" maxIterations="1000"/>
+
+    <Node name="Finger">
+        <EulerImplicitSolver rayleighStiffness="0.1" rayleighMass="0.1"/>
+        <SparseLDLSolver template="CompressedRowSparseMatrixd"/>
+
+        <MeshVTKLoader name="loader" filename="details/data/mesh/mypneunetCut_out.vtk" scale3d="0.001 0.001 0.001"/>
+        <MeshTopology name="container" src="@loader"/>
+        <MechanicalObject name="tetras" template="Vec3" showObject="0"/>
+
+        <TetrahedronFEMForceField name="FEM" template="Vec3" method="large" poissonRatio="0.3" youngModulus="5e5"/>
+        <UniformMass totalMass="0.04"/>
+
+        <BoxROI name="boxROISubTopo" box="-0.1 0.0225 -0.008 -0.019 0.028 0.008" strict="0"/>
+        <BoxROI name="boxROI" box="-0.01 0.0 -0.02 0.0 0.03 0.02"/>
+        <RestShapeSpringsForceField points="@boxROI.indices" stiffness="1e12" angularStiffness="1e12"/>
+        <GenericConstraintCorrection/>
+
+        <Node name="SubTopology">
+            <MeshTopology name="container" position="@../loader.position" tetrahedra="@../boxROISubTopo.tetrahedraInROI"/>
+            <TetrahedronFEMForceField name="FEM" template="Vec3" method="large" poissonRatio="0.3" youngModulus="1.5e6"/>
+        </Node>
+
+        <Node name="Cavity">
+            <MeshSTLLoader name="cavityLoader" filename="details/data/mesh/mypneunetCut_in.stl" scale3d="0.001 0.001 0.001"/>
+            <MeshTopology name="cavityMesh" src="@cavityLoader"/>
+            <MechanicalObject name="cavity"/>
+            <SurfacePressureConstraint
+                name="SurfacePressureConstraint"
+                template="Vec3"
+                value="1000.0"
+                triangles="@cavityMesh.triangles"
+                valueType="pressure"/>
+            <BarycentricMapping name="mapping" mapForces="0" mapMasses="0"/>
+        </Node>
+
+        <Node name="VisualModel">
+            <MeshSTLLoader name="loader" filename="details/data/mesh/mypneunetCut_out.stl" scale3d="0.001 0.001 0.001"/>
+            <OglModel src="@loader" color="1.0 0.55 0.1 1.0"/>
+            <BarycentricMapping/>
+        </Node>
+    </Node>
+</Node>
