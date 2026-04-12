@@ -3,7 +3,7 @@ import os
 import numpy as np
 
 mesh_dir = os.path.join(os.getcwd(), "details", "data", "mesh")
-file_path = os.path.join(mesh_dir, "pneunetCut.vtk")
+file_path = os.path.join(mesh_dir, "mypneunetCut_all.vtk")
 # file_path = os.path.join(mesh_dir, "pneunetCutCoarse.vtk")
 mesh = pv.read(file_path)
 print(f"Loaded mesh from {file_path}")
